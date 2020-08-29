@@ -6,6 +6,16 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const app = express();
+mongoose
+  .connect(process.env.DATABASE, {
+    useNewUrlParser: true,
+    useFindAndModify: true,
+    useUnifiedTopology: true,
+    useCreataeIndex: true,
+  })
+  .then(() => console.log("DB connected"))
+  .catch((err) => console.log(`DB connection error: ${err}`));
+
 const authRoutes = require("./routes/auth");
 
 app.use(morgan("dev"));
