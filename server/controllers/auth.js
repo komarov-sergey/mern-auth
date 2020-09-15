@@ -89,3 +89,35 @@ exports.accountActivation = async (req, res) => {
     });
   }
 };
+
+exports.signin = async (req, res) => {
+  try {
+    let { email, password } = req.body;
+    const user = await User.findOne({ email }).exec();
+
+    if (user === null) {
+      return res
+        .status(400)
+        .json({ error: "User with that email does not exist. Please signup" });
+    }
+
+    if (!user.authenticate(password)) {
+      return res.status(400).json({ error: "Email and password do not match" });
+    }
+
+    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+    // const { _id, name, email, role } = user;
+
+    return res.json({
+      token,
+      user,
+    });
+  } catch (e) {
+    console.log(2);
+    return res
+      .status(400)
+      .json({ error: "User with that email does not exist. Please signup" });
+  }
+};
