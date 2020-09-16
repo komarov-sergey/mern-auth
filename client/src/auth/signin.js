@@ -7,15 +7,14 @@ import Layout from "../core/Layout";
 
 import "react-toastify/dist/ReactToastify.min.css";
 
-const Signup = () => {
+const Signin = () => {
   const [values, setValues] = useState({
-    name: "Sergey",
     email: "komarovs33@mail.ru",
     password: "123456",
     buttonText: "Submit",
   });
 
-  const { name, email, password, buttonText } = values;
+  const { email, password, buttonText } = values;
 
   const handleChange = (name) => (e) => {
     setValues({ ...values, [name]: e.target.value });
@@ -27,19 +26,20 @@ const Signup = () => {
     setValues({ ...values, buttonText: "Submitting" });
     axios({
       method: "POST",
-      url: `${process.env.REACT_APP_API}/signup`,
-      data: { name, email, password },
+      url: `${process.env.REACT_APP_API}/signin`,
+      data: { email, password },
     })
       .then((res) => {
         console.log({ res });
+
+        //save the res (user, token) localstorage/cookie
         setValues({
           ...values,
-          name: "",
           email: "",
           password: "",
           buttonText: "Submited",
         });
-        toast.success(res.data.message);
+        toast.success(`Hey ${res.data.user.name}, Welcome back!`);
       })
       .catch((err) => {
         console.log(err.response.data);
@@ -48,18 +48,8 @@ const Signup = () => {
       });
   };
 
-  const signupForm = () => (
+  const signinForm = () => (
     <form>
-      <div className="form-group">
-        <label className="text-muted">Name</label>
-        <input
-          onChange={handleChange("name")}
-          value={name}
-          type="text"
-          className="form-control"
-        />
-      </div>
-
       <div className="form-group">
         <label className="text-muted">Email</label>
         <input
@@ -92,12 +82,11 @@ const Signup = () => {
     <Layout>
       <div className="col-d-6 offset-md-3">
         <ToastContainer />
-        {JSON.stringify({ name, email, password })}
-        <h1 className="p-5 text-center">Signup</h1>
-        {signupForm()}
+        <h1 className="p-5 text-center">Signin</h1>
+        {signinForm()}
       </div>
     </Layout>
   );
 };
 
-export default Signup;
+export default Signin;
