@@ -8,7 +8,7 @@ import { authenticate, isAuth } from "./helpers";
 
 import "react-toastify/dist/ReactToastify.min.css";
 
-const Signin = () => {
+const Signin = ({ history }) => {
   const [values, setValues] = useState({
     email: "komarovs33@mail.ru",
     password: "123456",
@@ -41,11 +41,14 @@ const Signin = () => {
             password: "",
             buttonText: "Submited",
           });
-          toast.success(`Hey ${res.data.user.name}, Welcome back!`);
+          // toast.success(`Hey ${res.data.user.name}, Welcome back!`);
+          isAuth() && isAuth().role === "admin"
+            ? history.push("/admin")
+            : history.push("/private");
         });
       })
       .catch((err) => {
-        console.log(err.response.data);
+        console.log({ err });
         setValues({ ...values, buttonText: "Submit" });
         toast.error(err.response.data.error);
       });
