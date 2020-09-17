@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const expressJwt = require("express-jwt");
 
 const mailjet = require("node-mailjet").connect(
   process.env.MAIL_TOKEN1,
@@ -121,3 +122,8 @@ exports.signin = async (req, res) => {
       .json({ error: "User with that email does not exist. Please signup" });
   }
 };
+
+exports.requireSignin = expressJwt({
+  secret: process.env.JWT_SECRET,
+  algorithms: ["HS256"],
+});
