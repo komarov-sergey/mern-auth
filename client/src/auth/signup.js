@@ -3,7 +3,7 @@ import { Link, Redirect } from "react-router-dom";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 
-import Layout from "../core/Layout";
+import Layout from "../core/layout";
 import { isAuth } from "./helpers";
 
 import "react-toastify/dist/ReactToastify.min.css";

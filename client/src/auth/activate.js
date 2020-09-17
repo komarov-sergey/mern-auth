@@ -4,7 +4,7 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import jwt from "jsonwebtoken";
 
-import Layout from "../core/Layout";
+import Layout from "../core/layout";
 
 import "react-toastify/dist/ReactToastify.min.css";
 
