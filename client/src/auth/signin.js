@@ -23,7 +23,6 @@ const Signin = ({ history }) => {
 
   const clickSubmit = (e) => {
     e.preventDefault();
-
     setValues({ ...values, buttonText: "Submitting" });
     axios({
       method: "POST",
