@@ -142,3 +142,57 @@ exports.adminMiddleware = (req, res, next) => {
     next();
   });
 };
+
+exports.forgotPassword = (req, res) => {
+  const { email } = req.body;
+
+  User.findOne({ email }, async (err, user) => {
+    if (err || !user) {
+      return res
+        .status(400)
+        .json({ error: "User with that email does not exist" });
+    }
+
+    const token = jwt.sign({ _id: user._id }, process.env.JWT_RESET_PASSWORD, {
+      expiresIn: "10m",
+    });
+
+    try {
+      const request = await mailjet.post("send", { version: "v3.1" }).request({
+        Messages: [
+          {
+            From: {
+              Email: process.env.EMAIL_FROM,
+              Name: "Sergey",
+            },
+            To: [
+              {
+                Email: email,
+                Name: "Sergey",
+              },
+            ],
+            Subject: "Password reset link",
+            HTMLPart: `
+            <h1>Please use the following link to reset your password</h1>
+            <p>${process.env.CLIENT_URL}/auth/password/reset/${token}</p>
+            <hr />
+            <p>This email may contain sensetive information</p>
+            <p>${process.env.CLIENT_URL}</p>
+            `,
+            CustomID: "AppGettingStartedTest",
+          },
+        ],
+      });
+      return res.json({
+        message: `Email has been sent to ${email}. Follow the instraction to activate your account.`,
+      });
+    } catch (e) {
+      console.log({ e });
+      return res.json({
+        message: e.message,
+      });
+    }
+  });
+};
+
+exports.resetPassword = (req, res) => {};
