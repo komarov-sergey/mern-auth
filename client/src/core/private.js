@@ -1,18 +1,51 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 
 import Layout from "../core/layout";
+import { isAuth, getCookie, signout, updateUser } from "../auth/helpers";
 
 import "react-toastify/dist/ReactToastify.min.css";
-const Private = () => {
+
+const Private = ({ history }) => {
   const [values, setValues] = useState({
     role: "",
-    name: "Sergey",
-    email: "komarovs33@mail.ru",
-    password: "123456",
+    name: "",
+    email: "",
+    password: "",
     buttonText: "Submit",
   });
+
+  const token = getCookie("token");
+
+  console.log({ token });
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = () => {
+    axios({
+      method: "GET",
+      url: `${process.env.REACT_APP_API}/user/${isAuth()._id}`,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        console.log({ res });
+        const { role, name, email } = res.data;
+        setValues({ ...values, role, name, email });
+      })
+      .catch((err) => {
+        console.log(err.response.data.error);
+        if (err.response.status === 401) {
+          signout(() => {
+            history.push("/");
+          });
+        }
+      });
+  };
 
   const { role, name, email, password, buttonText } = values;
 
@@ -25,23 +58,25 @@ const Private = () => {
 
     setValues({ ...values, buttonText: "Submitting" });
     axios({
-      method: "POST",
-      url: `${process.env.REACT_APP_API}/signup`,
-      data: { name, email, password },
+      method: "PUT",
+      url: `${process.env.REACT_APP_API}/user/update/${isAuth()._id}`,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      data: { name, password },
     })
       .then((res) => {
         console.log({ res });
-        setValues({
-          ...values,
-          name: "",
-          email: "",
-          password: "",
-          buttonText: "Submited",
+        updateUser(res, () => {
+          setValues({
+            ...values,
+            buttonText: "Submited",
+          });
+          toast.success("Profile updated successfully");
         });
-        toast.success(res.data.message);
       })
       .catch((err) => {
-        console.log(err.response.data);
+        console.log(err.response.data.error);
         setValues({ ...values, buttonText: "Submit" });
         toast.error(err.response.data.error);
       });
@@ -51,7 +86,12 @@ const Private = () => {
     <form>
       <div className="form-group">
         <label className="text-muted">Role</label>
-        <input defaultValue={role} type="text" className="form-control" />
+        <input
+          defaultValue={role}
+          type="text"
+          className="form-control"
+          disabled
+        />
       </div>
       <div className="form-group">
         <label className="text-muted">Name</label>
@@ -65,7 +105,12 @@ const Private = () => {
 
       <div className="form-group">
         <label className="text-muted">Email</label>
-        <input defaultValue={email} type="email" className="form-control" />
+        <input
+          defaultValue={email}
+          type="email"
+          className="form-control"
+          disabled
+        />
       </div>
 
       <div className="form-group">
