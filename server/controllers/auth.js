@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const expressJwt = require("express-jwt");
+const _ = require("lodash");
 
 const mailjet = require("node-mailjet").connect(
   process.env.MAIL_TOKEN1,
@@ -146,7 +147,7 @@ exports.adminMiddleware = (req, res, next) => {
 exports.forgotPassword = (req, res) => {
   const { email } = req.body;
 
-  User.findOne({ email }, async (err, user) => {
+  User.findOne({ email }, async (err, user, res) => {
     if (err || !user) {
       return res
         .status(400)
@@ -157,42 +158,95 @@ exports.forgotPassword = (req, res) => {
       expiresIn: "10m",
     });
 
-    try {
-      const request = await mailjet.post("send", { version: "v3.1" }).request({
-        Messages: [
-          {
-            From: {
-              Email: process.env.EMAIL_FROM,
-              Name: "Sergey",
-            },
-            To: [
-              {
-                Email: email,
-                Name: "Sergey",
-              },
-            ],
-            Subject: "Password reset link",
-            HTMLPart: `
-            <h1>Please use the following link to reset your password</h1>
-            <p>${process.env.CLIENT_URL}/auth/password/reset/${token}</p>
-            <hr />
-            <p>This email may contain sensetive information</p>
-            <p>${process.env.CLIENT_URL}</p>
-            `,
-            CustomID: "AppGettingStartedTest",
-          },
-        ],
-      });
-      return res.json({
-        message: `Email has been sent to ${email}. Follow the instraction to activate your account.`,
-      });
-    } catch (e) {
-      console.log({ e });
-      return res.json({
-        message: e.message,
-      });
-    }
+    return user.updateOne(
+      { resetPasswordLink: token },
+      async (err, success, res) => {
+        if (err) {
+          console.log({ err });
+          return res.status(400).json({
+            error: "Database connection error on user password forgot request",
+          });
+        } else {
+          try {
+            await mailjet.post("send", { version: "v3.1" }).request({
+              Messages: [
+                {
+                  From: {
+                    Email: process.env.EMAIL_FROM,
+                    Name: "Sergey",
+                  },
+                  To: [
+                    {
+                      Email: email,
+                      Name: "Sergey",
+                    },
+                  ],
+                  Subject: "Password reset link",
+                  HTMLPart: `
+                <h1>Please use the following link to reset your password</h1>
+                <p>${process.env.CLIENT_URL}/auth/password/reset/${token}</p>
+                <hr />
+                <p>This email may contain sensetive information</p>
+                <p>${process.env.CLIENT_URL}</p>
+                `,
+                  CustomID: "AppGettingStartedTest",
+                },
+              ],
+            });
+            return res.json({
+              message: `Email has been sent to ${email}. Follow the instraction to activate your account.`,
+            });
+          } catch (e) {
+            console.log({ e });
+            return res.json({
+              message: e.message,
+            });
+          }
+        }
+      }
+    );
   });
 };
 
-exports.resetPassword = (req, res) => {};
+exports.resetPassword = (req, res) => {
+  const { resetPasswordLink, newPassword } = req.body;
+
+  if (resetPasswordLink) {
+    jwt.verify(resetPasswordLink, process.env.JWT_RESET_PASSWORD, function (
+      err,
+      decoded
+    ) {
+      if (err) {
+        return res.status(400).json({
+          error: "Expired link. Try again",
+        });
+      }
+
+      User.findOne({ resetPasswordLink }, (err, user) => {
+        if (err || !user) {
+          return res.status(400).json({
+            error: "Something went wrong. Try later",
+          });
+        }
+
+        const updatedFields = {
+          password: newPassword,
+          resetPasswordLink: "",
+        };
+
+        user = _.extend(user, updatedFields);
+
+        user.save((err, result) => {
+          if (err) {
+            return res.status(400).json({
+              error: "Error resetting user password",
+            });
+          }
+          res.json({
+            message: `Great! Now you can login with your new password`,
+          });
+        });
+      });
+    });
+  }
+};
