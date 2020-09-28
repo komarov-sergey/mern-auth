@@ -154,9 +154,13 @@ exports.forgotPassword = (req, res) => {
         .json({ error: "User with that email does not exist" });
     }
 
-    const token = jwt.sign({ _id: user._id }, process.env.JWT_RESET_PASSWORD, {
-      expiresIn: "10m",
-    });
+    const token = jwt.sign(
+      { _id: user._id, name: user.name },
+      process.env.JWT_RESET_PASSWORD,
+      {
+        expiresIn: "10m",
+      }
+    );
 
     user.updateOne({ resetPasswordLink: token }, async (err, success, res) => {
       if (err) {
